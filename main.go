@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -80,20 +83,36 @@ func deleteAlbumById(c *gin.Context) {
 	c.JSON(http.StatusNotFound, "data not found")
 }
 
-func getHome(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", nil)
+func handler(w http.ResponseWriter, r *http.Request) {
+	name := os.Getenv("NAME")
+	if name == "" {
+		name = "World"
+	}
+	fmt.Fprintf(w, "Hello %s!\n", name)
 }
 
 func main() {
+	log.Print("starting server...")
+	http.HandleFunc("/", handler)
+
+	// Determine port for HTTP service.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("defaulting to port %s", port)
+	}
+
+	// Start HTTP server.
+	log.Printf("listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
+
 	router := gin.Default()
 	router.LoadHTMLGlob("page/*.html")
-	router.GET("/", getHome)
 	router.GET("/albums", getAlbums)
 	router.GET("/albums/:id", getAlbumById)
 	router.POST("/albums", postAlbums)
 	router.PUT("/albums/:id", updateAlbums)
 	router.DELETE("/albums/:id", deleteAlbumById)
-
-	router.Run("localhost:8080")
-
 }
